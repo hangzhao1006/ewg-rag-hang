@@ -4,9 +4,11 @@
 #         external: true
 services:
     ewg-data-chat:
-        image: ewg-data-chat
         container_name: ewg-data-chat
-        build: .
+        build:
+            context: ..
+            dockerfile: infra/Dockerfile
+        image: ewg-data-chat
         env_file:
             - .env
         volumes:
@@ -15,7 +17,7 @@ services:
             - ../backend:/app/backend
             - ../chroma_index:/chroma_index
         environment:
-            # GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS
+            GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS
             GCP_PROJECT: $GCP_PROJECT
             GCS_BUCKET_URI: ${GCS_BUCKET_URI}
             OPENAI_API_KEY: ${OPENAI_API_KEY}
