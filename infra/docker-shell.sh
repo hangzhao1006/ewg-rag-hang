@@ -22,6 +22,7 @@ gcloud secrets versions access latest --secret=$SECRET_NAME > "$SECRETS_DIR/mode
 docker build -t $IMAGE_NAME -f infra/Dockerfile "$REPO_ROOT"
 # M1/2 chip macs use this line
 # docker build -t $IMAGE_NAME --platform=linux/arm64/v8 -f Dockerfile .
+#
 
 # Run Container
 docker run --rm --name $IMAGE_NAME -ti \

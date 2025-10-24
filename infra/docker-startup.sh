@@ -19,4 +19,3 @@ docker compose up --build -d
 
 # (可选) 不立刻删 ewg-data.json，因为容器还在用这个 volume。
 # 如果你删掉，本地 volume 也没了，容器重启就会炸。
-# 所以：在 compose 模式下，一般保留这个文件在磁盘上，只是别commit进git。

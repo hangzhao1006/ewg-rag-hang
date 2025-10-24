@@ -1,7 +1,7 @@
 # networks:
 #     default:
 #         name: ewg-data-chat
-#         external: true
+#         external: 
 services:
     ewg-data-chat:
         container_name: ewg-data-chat
