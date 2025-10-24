@@ -15,7 +15,7 @@ services:
             - ../backend:/app/backend
             - ../chroma_index:/chroma_index
         environment:
-            GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS
+            # GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS
             GCP_PROJECT: $GCP_PROJECT
             GCS_BUCKET_URI: ${GCS_BUCKET_URI}
             OPENAI_API_KEY: ${OPENAI_API_KEY}
