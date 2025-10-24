@@ -68,11 +68,19 @@ EMBEDDING_DIMENSION = int(os.environ.get('EMBEDDING_DIMENSION', 256))
 GENERATIVE_MODEL = "gemini-2.0-flash-001"
 OPENAI_EMBEDDING_MODEL = os.environ.get('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small')
 OPENAI_CHAT_MODEL = os.environ.get('OPENAI_CHAT_MODEL', 'gpt-3.5-turbo')
-INPUT_FOLDER = "input-datasets"
-OUTPUT_FOLDER = "outputs"
-# Allow overriding chroma host/port from environment when running on host vs inside docker
-CHROMADB_HOST = os.environ.get("CHROMADB_HOST", "llm-rag-chromadb")
-CHROMADB_PORT = int(os.environ.get("CHROMADB_PORT", 8000))
+
+
+INPUT_FOLDER = os.environ.get("INPUT_FOLDER", "/input-datasets")
+OUTPUT_FOLDER = os.environ.get("OUTPUT_FOLDER", "/input-datasets/outputs")
+FULL_ORIGINAL_JSONL = os.environ.get(
+    "FULL_ORIGINAL_JSONL",
+    "/input-datasets/raw/ewg_face_full.jsonl"
+)
+
+# chromadb 服务位置（docker-compose 里的 service 名）
+CHROMADB_HOST = os.environ.get("CHROMADB_HOST", "chromadb")
+CHROMADB_PORT = int(os.environ.get("CHROMADB_PORT", "8000"))
+
 
 # If GCP service account JSON is stored in env var GCP_SA_KEY, write it to a temp file
 def ensure_gcp_credentials_from_env() -> str | None:
@@ -118,7 +126,7 @@ SYSTEM_INSTRUCTION = """
 """
 
 book_mappings = {
-    
+
 }
 
 
@@ -578,7 +586,7 @@ def query(method="char-split", user_query: str | None = None):
 
         # 查找并打印每个检索到的文档对应的购买链接（若存在）
         try:
-            buy_map = find_buy_links_for_candidates(docs, metadatas, full_jsonl="ewg_face_full.jsonl")
+            buy_map = find_buy_links_for_candidates(docs, metadatas, full_jsonl=full_jsonl=FULL_ORIGINAL_JSONL)
             for idx, links in buy_map.items():
                 if links:
                     print(f"[BUY LINKS] doc[{idx}] -> {links}")

@@ -1,7 +1,7 @@
 # networks:
 #     default:
 #         name: ewg-data-chat
-#         external: 
+#         external:
 services:
     ewg-data-chat:
         container_name: ewg-data-chat
@@ -17,7 +17,7 @@ services:
             - ../backend:/app/backend
             - ../chroma_index:/chroma_index
         environment:
-            GOOGLE_APPLICATION_CREDENTIALS: $GOOGLE_APPLICATION_CREDENTIALS
+            GOOGLE_APPLICATION_CREDENTIALS: /secrets/ewg-data.json
             GCP_PROJECT: $GCP_PROJECT
             GCS_BUCKET_URI: ${GCS_BUCKET_URI}
             OPENAI_API_KEY: ${OPENAI_API_KEY}
