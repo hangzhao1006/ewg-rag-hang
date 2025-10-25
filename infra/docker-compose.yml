@@ -1,35 +1,44 @@
-# networks:
-#     default:
-#         name: ewg-data-chat
-#         external:
+version: "3.9"
+networks:
+     llm-rag-network:
+         name: llm-rag-network
+         external:true
 services:
     ewg-data-chat:
         container_name: ewg-data-chat
+        networks: 
+            - llm-rag-network
         build:
             context: ..
             dockerfile: infra/Dockerfile
         image: ewg-data-chat
+        tty: true
+        stdin_open: true
         env_file:
-            - .env
+            - infra/.env   
         volumes:
-            - ../secrets:/secrets
-            - ../input-datasets:/input-datasets
-            - ../backend:/app/backend
-            - ../chroma_index:/chroma_index
+            - ./backend:/app/backend
+            - ./input-datasets:/app/input-datasets
+            - ./chroma_index:/app/chroma_index
+            - ./secrets:/app/secrets
         environment:
-            GOOGLE_APPLICATION_CREDENTIALS: /secrets/ewg-data.json
+            GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/ewg-data.json
             GCP_PROJECT: $GCP_PROJECT
             GCS_BUCKET_URI: ${GCS_BUCKET_URI}
             OPENAI_API_KEY: ${OPENAI_API_KEY}
+            CHROMADB_HOST: chromadb
+            CHROMADB_PORT: "8000"
         depends_on:
             - chromadb
     chromadb:
         image: chromadb/chroma:latest
-        container_name: ewg-rag-chromadb
+        container_name: chromadb
+        networks: 
+            - llm-rag-network
         ports:
             - 8000:8000
         volumes:
-            - ./docker-volumes/chromadb:/chroma/chroma
+            - ./chroma_index:/chroma/chroma
         environment:
             - IS_PERSISTENT=TRUE
             - ANONYMIZED_TELEMETRY=FALSE
