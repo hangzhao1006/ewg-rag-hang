@@ -1,6 +1,6 @@
 version: "3.9"
 networks:
-     llm-rag-network:
+     default:
          name: llm-rag-network
          external:true
 services:
