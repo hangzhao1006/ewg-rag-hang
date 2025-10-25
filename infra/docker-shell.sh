@@ -119,7 +119,7 @@ docker run --rm --name "$IMAGE_NAME" -ti \
   -v "$DATA_DIR":/input-datasets \
   -v "$SECRETS_DIR":/secrets \
   -v "$CHROMA_DIR":/chroma_index \
-  -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/model-trainer.json \
+  -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/ewg-data.json \
   -e GCP_PROJECT="$GCP_PROJECT" \
   -e GCS_BUCKET_URI="$GCS_BUCKET_URI" \
   -e OPENAI_API_KEY="$OPENAI_API_KEY" \
