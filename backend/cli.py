@@ -586,7 +586,8 @@ def query(method="char-split", user_query: str | None = None):
 
         # 查找并打印每个检索到的文档对应的购买链接（若存在）
         try:
-            buy_map = find_buy_links_for_candidates(docs, metadatas, full_jsonl=full_jsonl=FULL_ORIGINAL_JSONL)
+            buy_map = find_buy_links_for_candidates(docs,metadatas,full_jsonl=FULL_ORIGINAL_JSONL,)
+
             for idx, links in buy_map.items():
                 if links:
                     print(f"[BUY LINKS] doc[{idx}] -> {links}")
