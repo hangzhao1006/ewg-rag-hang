@@ -1,15 +1,13 @@
+
+
 #!/bin/bash
+set -e
 
 echo "Container is running!!!"
 echo "Architecture: $(uname -m)"
-
-echo "Environment ready! Virtual environment activated."
 echo "Python version: $(python --version)"
-echo "UV version: $(uv --version)"
+echo "Pip version: $(pip --version)"
+echo "Environment ready (system python)."
 
-# Activate virtual environment
-echo "Activating virtual environment..."
-source /.venv/bin/activate
-
-# Keep a shell open
+# drop into interactive shell so you can run your pipeline manually
 exec /bin/bash
