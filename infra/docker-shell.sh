@@ -80,9 +80,9 @@ fi
 # 1. 创建本地需要的目录
 ########################################
 
-mkdir -p "$SECRETS_DIR"
-mkdir -p "$RAW_DIR" "$STRUCTURED_DIR" "$BOOKS_DIR" "$OUTPUTS_DIR"
-mkdir -p "$CHROMA_DIR"
+mkdir -p "$SECRETS_DIR" \
+         "$DATA_DIR/raw" "$DATA_DIR/structured" "$DATA_DIR/books" "$DATA_DIR/outputs" \
+         "$CHROMA_DIR"
 
 ########################################
 # 2. 从 Secret Manager 拉取 service account key
@@ -130,6 +130,7 @@ docker run --rm -ti \
   -e GCP_PROJECT="$GCP_PROJECT" \
   -e GCS_BUCKET_URI="$GCS_BUCKET_URI" \
   -e OPENAI_API_KEY="$OPENAI_API_KEY" \
+  --user root \
   "$IMAGE_NAME"
 
 ########################################
