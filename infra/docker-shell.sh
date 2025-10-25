@@ -110,6 +110,8 @@ gsutil cp "$GCS_BUCKET_URI/raw/ewg_face_full.jsonl" "$RAW_DIR/ewg_face_full.json
 # build context 用 repo 根目录，让 Dockerfile 能 COPY backend/、pyproject.toml 等
 docker build -t "$IMAGE_NAME" -f "$SCRIPT_DIR/Dockerfile" "$REPO_ROOT"
 
+docker network create llm-rag-network || true
+
 ########################################
 # 5. 启动容器 (交互式shell开发模式)
 ########################################
@@ -119,17 +121,32 @@ docker build -t "$IMAGE_NAME" -f "$SCRIPT_DIR/Dockerfile" "$REPO_ROOT"
 #   /secrets             -> service account key
 #   /chroma_index        -> 向量库持久化
 
-docker run --rm -ti \
-  --name ewg-rag-chat \
+if ! docker ps --format '{{.Names}}' | grep -q '^chroma$'; then
+  echo "[INFO] starting chroma vector DB container..."
+  docker run -d \
+    --name chroma \
+    --network llm-rag-network \
+    -p 8000:8000 \
+    -v "$CHROMA_DIR":/chroma/chroma \
+    -e IS_PERSISTENT=TRUE \
+    -e ANONYMIZED_TELEMETRY=FALSE \
+    chromadb/chroma:latest
+fi
+
+
+echo "[INFO] starting app container..."
+docker run --rm --name "$IMAGE_NAME" -ti \
   --network llm-rag-network \
   -v "$BACKEND_DIR":/app/backend \
   -v "$DATA_DIR":/app/input-datasets \
-  -v "$SECRETS_DIR":/secrets \
-  -v "$CHROMA_DIR":/chroma_index \
-  -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/ewg-data.json \
+  -v "$SECRETS_DIR":/app/secrets \
+  -v "$CHROMA_DIR":/app/chroma_index \
+  -e GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/ewg-data.json \
   -e GCP_PROJECT="$GCP_PROJECT" \
   -e GCS_BUCKET_URI="$GCS_BUCKET_URI" \
   -e OPENAI_API_KEY="$OPENAI_API_KEY" \
+  -e CHROMADB_HOST="chroma" \
+  -e CHROMADB_PORT="8000" \
   --user root \
   "$IMAGE_NAME"
 
