@@ -1,7 +1,7 @@
 import os
 
 if "GOOGLE_APPLICATION_CREDENTIALS" not in os.environ:
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/apple/Downloads/ewg_data/secrets/llm-service-account.json"
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/Users/apple/Downloads/ewg_data/secrets/ewg-data.json"
 
 import argparse
 import pandas as pd
