@@ -1,5 +1,16 @@
 # misc
 .DS_Store
 /docker-volumes
-/outputs
-.env
+
+# never commit secrets
+secrets/
+infra/.env
+*.json  # 如果你误放了 service account json
+
+# optional but smart:
+chroma_index/
+input-datasets/raw/
+input-datasets/structured/
+input-datasets/books/
+input-datasets/outputs/
+
