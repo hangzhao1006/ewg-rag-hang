@@ -71,7 +71,10 @@ SECRET_NAME="ewg-data"                # 你在 Secret Manager 里的 secret 名�
 # 把 infra/.env 里的 OPENAI_API_KEY 等变量读进来
 # 确保 infra/.env 里已经有:
 # OPENAI_API_KEY=sk-xxxx
-source "$SCRIPT_DIR/.env"
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    # shellcheck disable=SC1090
+    source "$SCRIPT_DIR/.env"
+fi
 
 ########################################
 # 1. 创建本地需要的目录
@@ -86,10 +89,12 @@ mkdir -p "$CHROMA_DIR"
 ########################################
 
 # 取最新版本的 service account key，写到 secrets/model-trainer.json
-gcloud secrets versions access latest --secret="$SECRET_NAME" > "$SECRETS_DIR/model-trainer.json"
+gcloud secrets versions access latest --secret="$SECRET_NAME" > "$SECRETS_DIR/ewg-data.json"
 
 # 用这个 key 在宿主机上激活账号，这样我们宿主机可以跑 gsutil
-gcloud auth activate-service-account --key-file="$SECRETS_DIR/model-trainer.json" --project "$GCP_PROJECT"
+gcloud auth activate-service-account \
+  --key-file="$SECRETS_DIR/ewg-data.json" \
+  --project "$GCP_PROJECT"
 
 ########################################
 # 3. 从 GCS bucket 下载原始数据到本地 raw/
@@ -114,7 +119,9 @@ docker build -t "$IMAGE_NAME" -f "$SCRIPT_DIR/Dockerfile" "$REPO_ROOT"
 #   /secrets             -> service account key
 #   /chroma_index        -> 向量库持久化
 
-docker run --rm --name "$IMAGE_NAME" -ti \
+docker run --rm -ti \
+  --name ewg-rag-chat \
+  --network llm-rag-network \
   -v "$BACKEND_DIR":/app/backend \
   -v "$DATA_DIR":/app/input-datasets \
   -v "$SECRETS_DIR":/secrets \
@@ -141,3 +148,4 @@ docker run --rm --name "$IMAGE_NAME" -ti \
 # 6. 清理本地明文 key
 ########################################
 rm "$SECRETS_DIR/ewg-data.json"
+echo "Local service account key removed."
