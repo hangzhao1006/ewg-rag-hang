@@ -116,10 +116,10 @@ docker build -t "$IMAGE_NAME" -f "$SCRIPT_DIR/Dockerfile" "$REPO_ROOT"
 
 docker run --rm --name "$IMAGE_NAME" -ti \
   -v "$BACKEND_DIR":/app/backend \
-  -v "$DATA_DIR":/input-datasets \
+  -v "$DATA_DIR":/app/input-datasets \
   -v "$SECRETS_DIR":/secrets \
   -v "$CHROMA_DIR":/chroma_index \
-  -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/model-trainer.json \
+  -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/ewg-data.json \
   -e GCP_PROJECT="$GCP_PROJECT" \
   -e GCS_BUCKET_URI="$GCS_BUCKET_URI" \
   -e OPENAI_API_KEY="$OPENAI_API_KEY" \
@@ -127,17 +127,17 @@ docker run --rm --name "$IMAGE_NAME" -ti \
 
 ########################################
 # structured jsonl / csv
-gsutil cp "$STRUCTURED_DIR/*" "$GCS_BUCKET_URI/structured/"
+# gsutil cp "$STRUCTURED_DIR/*" "$GCS_BUCKET_URI/structured/"
 
-# 生成的 txt
-gsutil cp "$BOOKS_DIR/*" "$GCS_BUCKET_URI/txt/"
+# # 生成的 txt
+# gsutil cp "$BOOKS_DIR/*" "$GCS_BUCKET_URI/txt/"
 
-# chunks / embeddings
-gsutil cp "$OUTPUTS_DIR/*" "$GCS_BUCKET_URI/outputs/"
+# # chunks / embeddings
+# gsutil cp "$OUTPUTS_DIR/*" "$GCS_BUCKET_URI/outputs/"
 
-# chroma index (向量库)
-gsutil cp -r "$CHROMA_DIR/*" "$GCS_BUCKET_URI/chroma_index/"
+# # chroma index (向量库)
+# gsutil cp -r "$CHROMA_DIR/*" "$GCS_BUCKET_URI/chroma_index/"
 
 # 6. 清理本地明文 key
 ########################################
-rm "$SECRETS_DIR/model-trainer.json"
+rm "$SECRETS_DIR/ewg-data.json"
