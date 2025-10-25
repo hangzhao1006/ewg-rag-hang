@@ -14,7 +14,7 @@ import numpy as np
 import tempfile
 from urllib.parse import urlparse
 from sklearn.neighbors import NearestNeighbors
-
+from sentence_transformers import SentenceTransformer
 
 # Simple JSONL helpers used by EWG commands
 def load_jsonl(path: str):
@@ -70,16 +70,20 @@ OPENAI_EMBEDDING_MODEL = os.environ.get('OPENAI_EMBEDDING_MODEL', 'text-embeddin
 OPENAI_CHAT_MODEL = os.environ.get('OPENAI_CHAT_MODEL', 'gpt-3.5-turbo')
 
 
-INPUT_FOLDER = os.environ.get("INPUT_FOLDER", "/input-datasets")
-OUTPUT_FOLDER = os.environ.get("OUTPUT_FOLDER", "/input-datasets/outputs")
+INPUT_ROOT = "/app/input-datasets"  # 我们在 docker-shell.sh 里把宿主机的 input-datasets 挂到这里
+BOOKS_FOLDER = os.path.join(INPUT_ROOT, "books")
+OUTPUT_FOLDER = os.path.join(INPUT_ROOT, "outputs")
+STRUCTURED_FOLDER = os.path.join(INPUT_ROOT, "structured")
+RAW_FOLDER = os.path.join(INPUT_ROOT, "raw")
+
 FULL_ORIGINAL_JSONL = os.environ.get(
     "FULL_ORIGINAL_JSONL",
     "/input-datasets/raw/ewg_face_full.jsonl"
 )
 
 # chromadb 服务位置（docker-compose 里的 service 名）
-CHROMADB_HOST = os.environ.get("CHROMADB_HOST", "chromadb")
-CHROMADB_PORT = int(os.environ.get("CHROMADB_PORT", "8000"))
+CHROMADB_HOST = os.getenv("CHROMADB_HOST", "chroma")  # docker compose 里的 chroma service 名
+CHROMADB_PORT = int(os.getenv("CHROMADB_PORT", "8000"))
 
 
 # If GCP service account JSON is stored in env var GCP_SA_KEY, write it to a temp file
@@ -377,7 +381,7 @@ def chunk(method="char-split"):
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
     # Get the list of text file
-    text_files = glob.glob(os.path.join(INPUT_FOLDER, "books", "*.txt"))
+    txt_files = glob.glob(os.path.join(BOOKS_FOLDER, "*.txt"))
     print("Number of files to process:", len(text_files))
 
     # Process
@@ -430,10 +434,10 @@ def chunk(method="char-split"):
             print("Shape:", data_df.shape)
             print(data_df.head())
 
-            jsonl_filename = os.path.join(
-                OUTPUT_FOLDER, f"chunks-{method}-{book_name}.jsonl")
-            with open(jsonl_filename, "w") as json_file:
-                json_file.write(data_df.to_json(orient='records', lines=True))
+            out_path = os.path.join(OUTPUT_FOLDER, f"chunks-{method}-{file_index:04d}-{safe_title}.jsonl")
+            with open(out_path, "w") as f:
+                for row in rows:
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
 def embed(method="char-split"):
@@ -468,14 +472,15 @@ def embed(method="char-split"):
         print("Shape:", data_df.shape)
         print(data_df.head())
 
-        jsonl_filename = jsonl_file.replace("chunks-", "embeddings-")
-        with open(jsonl_filename, "w") as json_file:
-            json_file.write(data_df.to_json(orient='records', lines=True))
+        out_file = jsonl_file.replace("chunks-", "embeddings-")
+        data_df.to_json(out_file, orient="records", lines=True, force_ascii=False)
 
 
 def load(method="char-split"):
     print("load()")
 
+    collection_name = f"{method}-collection"
+    print("Creating/using collection:", collection_name)
     # Clear Cache
     chromadb.api.client.SharedSystemClient.clear_system_cache()
 
@@ -503,16 +508,29 @@ def load(method="char-split"):
         OUTPUT_FOLDER, f"embeddings-{method}-*.jsonl"))
     print("Number of files to process:", len(jsonl_files))
 
-    # Process
-    for jsonl_file in jsonl_files:
-        print("Processing file:", jsonl_file)
+    for jf in jsonl_files:
+        print("Loading file:", jf)
+        df = pd.read_json(jf, lines=True)
 
-        data_df = pd.read_json(jsonl_file, lines=True)
-        print("Shape:", data_df.shape)
-        print(data_df.head())
+        # 假设 df 里有这些列: 'chunk', 'embedding', 'doc_id'/'source'/'title'/whatever metadata
+        # 如果你的列名不同就按你的列名来
+        documents = df["chunk"].astype(str).tolist()
+        embeddings = df["embedding"].tolist()
 
-        # Load data
-        load_text_embeddings(data_df, collection)
+        # 作为唯一ID，可以组合 文件名 + 行号
+        ids = [f"{os.path.basename(jf)}::{i}" for i in range(len(df))]
+
+        # metadata: 你可以根据 df 里有没有 'product_name' 'brand' 等列来传
+        metadatas = df.drop(columns=["chunk", "embedding"], errors="ignore").to_dict(orient="records")
+
+        # 批量 upsert
+        collection.add(
+            ids=ids,
+            documents=documents,
+            embeddings=embeddings,
+            metadatas=metadatas
+        )
+        print(f"Inserted {len(df)} rows from {jf}")
 
 
 def query(method="char-split", user_query: str | None = None):
@@ -688,7 +706,12 @@ def chat(method="char-split", user_query: str | None = None):
 # EWG-specific simplified CLI
 ###############################
 
-def ewg_chunk(in_jsonl: str, out_chunks: str, chunk_size: int = 800, chunk_stride: int = 200):
+def ewg_chunk(
+    in_jsonl: str = os.path.join(STRUCTURED_DIR, "ewg_face_label_structured.jsonl"),
+    out_chunks: str = os.path.join(OUTPUTS_DIR, "ewg_chunks.jsonl"),
+    chunk_size: int = 800,
+    chunk_stride: int = 200,
+):
     print('[EWG] chunking', in_jsonl, '->', out_chunks)
     items = []
     for rec in load_jsonl(in_jsonl):
@@ -724,43 +747,58 @@ def ewg_chunk(in_jsonl: str, out_chunks: str, chunk_size: int = 800, chunk_strid
     print('[EWG] wrote', len(items), 'chunks')
 
 
-def ewg_embed(chunks_jsonl: str, out_index: str, out_meta: str):
-    # Ensure gcp creds if provided as secret
-    ensure_gcp_credentials_from_env()
+def ewg_embed(
+    chunks_jsonl: str = os.path.join(OUTPUTS_DIR, "ewg_chunks.jsonl"),
+    out_index: str = os.path.join(OUTPUTS_DIR, "ewg_index.npz"),
+    out_meta: str = os.path.join(OUTPUTS_DIR, "ewg_meta.jsonl"),
+):
+    # 如果你用 Vertex 的 embedding，就要 GCP creds；如果你用 OpenAI embedding，只要 OPENAI_API_KEY。
+    try:
+        ensure_gcp_credentials_from_env()
+    except Exception as e:
+        print("[EWG] warning: could not ensure gcp creds:", e)
+
     chunks = list(load_jsonl(chunks_jsonl))
-    texts = [c['text'] for c in chunks]
-    print('[EWG] embedding', len(texts), 'chunks')
-    # use existing generate_text_embeddings (Vertex or OpenAI based on env)
+    texts = [c["text"] for c in chunks]
+    print("[EWG] embedding", len(texts), "chunks")
+
     embeddings = generate_text_embeddings(texts, EMBEDDING_DIMENSION)
     arr = np.array(embeddings, dtype=np.float32)
 
-    # If using OpenAI, avoid overwriting Vertex file by default
-    if os.environ.get('OPENAI_API_KEY') and out_index.endswith('.npz'):
-        out_index_openai = out_index.replace('.npz', '_openai.npz')
+    # OpenAI vs Vertex 的区分逻辑你已经有了，继续保留：
+    if os.environ.get("OPENAI_API_KEY") and out_index.endswith(".npz"):
+        out_index_effective = out_index.replace(".npz", "_openai.npz")
     else:
-        out_index_openai = out_index
+        out_index_effective = out_index
 
-    np.savez(out_index_openai, embeddings=arr)
+    np.savez(out_index_effective, embeddings=arr)
     write_jsonl(out_meta, chunks)
-    print('[EWG] saved index', out_index_openai, 'and meta', out_meta)
+
+    print("[EWG] saved index", out_index_effective, "and meta", out_meta)
 
 
-def ewg_query(index_npz: str, metadata_jsonl: str, question: str, top_k: int = 5):
+
+def ewg_query(
+    question: str,
+    index_npz: str = os.path.join(OUTPUTS_DIR, "ewg_index.npz"),
+    metadata_jsonl: str = os.path.join(OUTPUTS_DIR, "ewg_meta.jsonl"),
+    top_k: int = 5,
+):
     data = np.load(index_npz, allow_pickle=True)
-    embeddings = data['embeddings']
+    embeddings = data["embeddings"]
     meta = list(load_jsonl(metadata_jsonl))
-    nn = NearestNeighbors(n_neighbors=top_k, metric='cosine')
+
+    nn = NearestNeighbors(n_neighbors=top_k, metric="cosine")
     nn.fit(embeddings)
-    # generate query embedding
+
     q_emb = generate_text_embeddings([question], EMBEDDING_DIMENSION)[0]
     ids = nn.kneighbors([q_emb], n_neighbors=top_k, return_distance=False)[0]
-    contexts = [meta[i]['text'] for i in ids]
-    print('\n--- Top contexts ---')
-    for i,c in enumerate(contexts):
-        print(f'[{i}]', c[:400].replace('\n',' '), '...')
-    # attempt answer generation via Vertex
-    # ensure_gcp_credentials_from_env()
-    creds_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+
+    contexts = [meta[i]["text"] for i in ids]
+    print("\n--- Top contexts ---")
+    for i, c in enumerate(contexts):
+        print(f"[{i}]", c[:400].replace("\n", " "), "...")
+        
     # If OPENAI_API_KEY is provided, use OpenAI Chat for generation
     if os.environ.get('OPENAI_API_KEY'):
         print('[EWG] OPENAI_API_KEY present, attempting to generate via OpenAI Chat')
@@ -918,6 +956,27 @@ def agent(method="char-split"):
         )
         print("LLM Response:", response)
 
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--chunk", action="store_true")
+parser.add_argument("--embed", action="store_true")
+parser.add_argument("--load", action="store_true")
+parser.add_argument("--query", action="store_true")
+parser.add_argument("--chat", action="store_true")
+parser.add_argument("--get", action="store_true")
+parser.add_argument("--agent", action="store_true")
+
+parser.add_argument("--chunk_type", default="char-split")
+parser.add_argument("--query_text", default=None)
+
+# 新增的：
+parser.add_argument("--ewg_chunk", action="store_true")
+parser.add_argument("--ewg_embed", action="store_true")
+parser.add_argument("--ewg_query", type=str, default=None)
+
+args = parser.parse_args()
+
 
 def main(args=None):
     print("CLI Arguments:", args)
@@ -942,6 +1001,13 @@ def main(args=None):
 
     if args.agent:
         agent(method=args.chunk_type)
+        
+    if args.ewg_chunk:
+        ewg_chunk()
+    if args.ewg_embed:
+        ewg_embed()
+    if args.ewg_query:
+        ewg_query(question=args.ewg_query)
 
 
 if __name__ == "__main__":
