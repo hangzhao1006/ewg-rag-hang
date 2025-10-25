@@ -21,6 +21,7 @@ COPY requirements.txt /app/requirements.txt
 # install deps
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r /app/requirements.txt
+    apt-get update && apt-get install nano -y
 
 # now copy source code (backend etc)
 COPY backend /app/backend
