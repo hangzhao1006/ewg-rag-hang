@@ -116,7 +116,7 @@ docker build -t "$IMAGE_NAME" -f "$SCRIPT_DIR/Dockerfile" "$REPO_ROOT"
 
 docker run --rm --name "$IMAGE_NAME" -ti \
   -v "$BACKEND_DIR":/app/backend \
-  -v "$DATA_DIR":/app/input-datasets
+  -v "$DATA_DIR":/app/input-datasets \
   -v "$SECRETS_DIR":/secrets \
   -v "$CHROMA_DIR":/chroma_index \
   -e GOOGLE_APPLICATION_CREDENTIALS=/secrets/ewg-data.json \
