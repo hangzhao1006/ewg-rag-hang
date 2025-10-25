@@ -1,15 +1,60 @@
 [project]
-name = "app"
+name = "ewg-rag-chat"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.12"
+description = "RAG backend for EWG data chat (chunk, embed, load to chroma)"
+requires-python = ">=3.12,<3.13"
+
+# 这些是 runtime 依赖
 dependencies = [
-    "chromadb>=1.1.0",
-    "google-genai>=1.39.1",
-    "langchain>=0.3.27",
-    "langchain-community>=0.3.30",
-    "openai>=1.95.1",
-    "openai-agents>=0.3.2",
-    "pandas>=2.3.3",
+    # 基础
+    "pandas==2.3.3",
+    "numpy==2.3.4",
+    "tqdm==4.67.1",
+    "requests==2.32.5",
+    "python-dotenv==1.1.1",
+    "pydantic==2.12.3",
+    "pydantic-settings==2.11.0",
+    "tenacity==9.1.2",
+    "typing-extensions==4.15.0",
+
+    # 解析 / 清洗
+    "beautifulsoup4==4.14.2",
+    "lxml==6.0.2",
+
+    # 向量 & NLP
+    "sentence-transformers==5.1.1",
+    "scikit-learn==1.5.2",            # CPU build, no CUDA
+    "tiktoken==0.12.0",
+
+    # RAG & splitter
+    "langchain==1.0.2",               # we installed ~1.0.2
+    "langchain-community==0.4",       # you pip installed this manually
+    "langchain-text-splitters==1.0.0",
+    "chromadb==1.2.1",                # you ended up on 1.2.x
+    "openai==2.6.1",
+
+    # Google / GCS
+    "google-cloud-storage==3.4.1",
+    "google-auth==2.41.1",
+    "google-auth-oauthlib==1.2.2",
+    "google-auth-httplib2==0.2.0",
+
+    # server deps your cli imports:
+    "fastapi==0.115.6",
+    "uvicorn==0.38.0",
+    "httpx==0.28.1",                  # chroma client already wants this
+    "httpx-sse==0.4.3",
+
+    # misc
+    "rich==14.2.0",
+    "coloredlogs==15.0.1",
+    "python-dateutil==2.9.0.post0",
+    "pytz==2025.2",
 ]
+
+[tool.setuptools]
+py-modules = []
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
