@@ -1,19 +1,48 @@
-beautifulsoup4
-lxml
-requests
-tqdm
-pandas
-numpy
-python-dotenv
-google-cloud-storage
-google-auth
-google-auth-oauthlib
-google-auth-httplib2
-tenacity
-pydantic
-pydantic-settings
-langchain
-langchain-text-splitters
-tiktoken
-chromadb
-openai
+# --- core scientific / data ---
+numpy==2.3.4
+pandas==2.3.3
+scikit-learn==1.5.2
+scipy==1.14.1
+tqdm==4.67.1
+
+# text / html parsing
+beautifulsoup4==4.14.2
+lxml==5.3.0
+regex==2025.10.23
+
+# logging / utils
+coloredlogs==15.0.1
+rich==14.2.0
+tenacity==9.1.2
+python-dotenv==1.1.1
+requests==2.32.5
+
+# google cloud access
+google-auth==2.41.1
+google-auth-oauthlib==1.2.2
+google-auth-httplib2==0.2.0
+google-cloud-storage==3.4.1
+
+# llm ecosystem
+openai==2.6.1
+google-genai==1.45.0
+
+pydantic==2.12.3
+pydantic-settings==2.11.0
+tiktoken==0.12.0
+
+# langchain stack (versions close to what your code expects)
+langchain-core==1.0.1
+langchain-community==0.4.0
+langchain-text-splitters==1.0.0
+langsmith==0.4.38
+
+# vector DB
+chromadb==1.2.1
+
+# embedding / sentence transformers
+sentence-transformers==3.2.1
+
+# torch (CPU build)
+torch==2.4.0+cpu
+-f https://download.pytorch.org/whl/cpu
