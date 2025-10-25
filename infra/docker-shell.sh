@@ -127,17 +127,17 @@ docker run --rm --name "$IMAGE_NAME" -ti \
 
 ########################################
 # structured jsonl / csv
-gsutil cp "$STRUCTURED_DIR/*" "$GCS_BUCKET_URI/structured/"
+# gsutil cp "$STRUCTURED_DIR/*" "$GCS_BUCKET_URI/structured/"
 
-# 生成的 txt
-gsutil cp "$BOOKS_DIR/*" "$GCS_BUCKET_URI/txt/"
+# # 生成的 txt
+# gsutil cp "$BOOKS_DIR/*" "$GCS_BUCKET_URI/txt/"
 
-# chunks / embeddings
-gsutil cp "$OUTPUTS_DIR/*" "$GCS_BUCKET_URI/outputs/"
+# # chunks / embeddings
+# gsutil cp "$OUTPUTS_DIR/*" "$GCS_BUCKET_URI/outputs/"
 
-# chroma index (向量库)
-gsutil cp -r "$CHROMA_DIR/*" "$GCS_BUCKET_URI/chroma_index/"
+# # chroma index (向量库)
+# gsutil cp -r "$CHROMA_DIR/*" "$GCS_BUCKET_URI/chroma_index/"
 
 # 6. 清理本地明文 key
 ########################################
-rm "$SECRETS_DIR/model-trainer.json"
+rm "$SECRETS_DIR/ewg-data.json"
