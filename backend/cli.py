@@ -1002,13 +1002,13 @@ def main(args=None):
     if args.agent:
         agent(method=args.chunk_type)
 
-    if args.ewg_chunk:
+     # 添加 hasattr 检查
+    if hasattr(args, 'ewg_chunk') and args.ewg_chunk:
         ewg_chunk()
-    if args.ewg_embed:
+    if hasattr(args, 'ewg_embed') and args.ewg_embed:
         ewg_embed()
-    if args.ewg_query:
+    if hasattr(args, 'ewg_query') and args.ewg_query:
         ewg_query(question=args.ewg_query)
-
 
 if __name__ == "__main__":
     # Generate the inputs arguments parser
