@@ -2,7 +2,7 @@ version: "3.9"
 networks:
      default:
          name: llm-rag-network
-         external:true
+         external: true
 services:
     ewg-data-chat:
         container_name: ewg-data-chat
