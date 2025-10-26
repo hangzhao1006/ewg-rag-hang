@@ -708,7 +708,7 @@ def chat(method="char-split", user_query: str | None = None):
 def ewg_chunk(
     # ✅ 正确
     in_jsonl: str = os.path.join(STRUCTURED_FOLDER, "ewg_face_label_structured.jsonl"),
-    out_chunks: str = os.path.join(OUTPUTS_FOLDER, "ewg_chunks.jsonl"),
+    out_chunks: str = os.path.join(OUTPUT_FOLDER, "ewg_chunks.jsonl"),
     chunk_size: int = 800,
     chunk_stride: int = 200,
 ):
@@ -748,9 +748,9 @@ def ewg_chunk(
 
 
 def ewg_embed(
-    chunks_jsonl: str = os.path.join(OUTPUTS_FOLDER, "ewg_chunks.jsonl"),
-    out_index: str = os.path.join(OUTPUTS_FOLDER, "ewg_index.npz"),
-    out_meta: str = os.path.join(OUTPUTS_FOLDER, "ewg_meta.jsonl"),
+    chunks_jsonl: str = os.path.join(OUTPUT_FOLDER, "ewg_chunks.jsonl"),
+    out_index: str = os.path.join(OUTPUT_FOLDER, "ewg_index.npz"),
+    out_meta: str = os.path.join(OUTPUT_FOLDER, "ewg_meta.jsonl"),
 ):
     # 如果你用 Vertex 的 embedding，就要 GCP creds；如果你用 OpenAI embedding，只要 OPENAI_API_KEY。
     try:
@@ -780,8 +780,8 @@ def ewg_embed(
 
 def ewg_query(
     question: str,
-    index_npz: str = os.path.join(OUTPUTS_FOLDER, "ewg_index.npz"),
-    metadata_jsonl: str = os.path.join(OUTPUTS_FOLDER, "ewg_meta.jsonl"),
+    index_npz: str = os.path.join(OUTPUT_FOLDER, "ewg_index.npz"),
+    metadata_jsonl: str = os.path.join(OUTPUT_FOLDER, "ewg_meta.jsonl"),
     top_k: int = 5,
 ):
     data = np.load(index_npz, allow_pickle=True)
