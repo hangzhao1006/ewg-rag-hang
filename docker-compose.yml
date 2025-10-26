@@ -4,18 +4,32 @@ networks:
          # name: llm-rag-network
          external: true
 services:
+    chromadb:
+        image: chromadb/chroma:latest
+        container_name: chromadb
+        networks: 
+            - llm-rag-network
+        ports:
+            - "8000:8000"
+        volumes:
+            - ./chroma_index:/chroma/chroma
+        environment:
+            - IS_PERSISTENT=TRUE
+            - ANONYMIZED_TELEMETRY=FALSE
+            - CHROMA_CORS_ALLOW_ORIGINS=["*"]
+            
     ewg-data-chat:
         container_name: ewg-data-chat
         networks: 
             - llm-rag-network
         build:
-            context: ..
+            context: .
             dockerfile: ./infra/Dockerfile
         image: ewg-data-chat
         tty: true
         stdin_open: true
         env_file:
-            - infra/.env   
+            - ./infra/.env   
         volumes:
             - ./backend:/app/backend
             - ./input-datasets:/app/input-datasets
@@ -23,23 +37,10 @@ services:
             - ./secrets:/app/secrets
         environment:
             GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/ewg-data.json
-            GCP_PROJECT: $GCP_PROJECT
+            GCP_PROJECT: ${GCP_PROJECT}
             GCS_BUCKET_URI: ${GCS_BUCKET_URI}
             OPENAI_API_KEY: ${OPENAI_API_KEY}
             CHROMADB_HOST: chromadb
             CHROMADB_PORT: "8000"
         depends_on:
             - chromadb
-    chromadb:
-        image: chromadb/chroma:latest
-        container_name: chromadb
-        networks: 
-            - llm-rag-network
-        ports:
-            - 8000:8000
-        volumes:
-            - ./chroma_index:/chroma/chroma
-        environment:
-            - IS_PERSISTENT=TRUE
-            - ANONYMIZED_TELEMETRY=FALSE
-            - CHROMA_CORS_ALLOW_ORIGINS=["*"] # This is not recommended for production environments.
