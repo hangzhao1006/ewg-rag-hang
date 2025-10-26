@@ -10,7 +10,7 @@ services:
             - llm-rag-network
         build:
             context: ..
-            dockerfile: infra/Dockerfile
+            dockerfile: ./infra/Dockerfile
         image: ewg-data-chat
         tty: true
         stdin_open: true
