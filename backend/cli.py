@@ -434,10 +434,9 @@ def chunk(method="char-split"):
             print("Shape:", data_df.shape)
             print(data_df.head())
 
-            out_path = os.path.join(OUTPUT_FOLDER, f"chunks-{method}-{file_index:04d}-{safe_title}.jsonl")
-            with open(out_path, "w") as f:
-                for row in rows:
-                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+            out_path = os.path.join(OUTPUT_FOLDER, f"chunks-{method}-{book_name}.jsonl")
+            data_df.to_json(out_path, orient="records", lines=True, force_ascii=False)
+            print(f"Saved chunks to {out_path}")
 
 
 def embed(method="char-split"):
@@ -798,7 +797,7 @@ def ewg_query(
     print("\n--- Top contexts ---")
     for i, c in enumerate(contexts):
         print(f"[{i}]", c[:400].replace("\n", " "), "...")
-        
+
     # If OPENAI_API_KEY is provided, use OpenAI Chat for generation
     if os.environ.get('OPENAI_API_KEY'):
         print('[EWG] OPENAI_API_KEY present, attempting to generate via OpenAI Chat')
@@ -1001,7 +1000,7 @@ def main(args=None):
 
     if args.agent:
         agent(method=args.chunk_type)
-        
+
     if args.ewg_chunk:
         ewg_chunk()
     if args.ewg_embed:
