@@ -37,9 +37,9 @@ services:
             - ./secrets:/app/secrets
         environment:
             GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/ewg-data.json
-            GCP_PROJECT: ${GCP_PROJECT}
-            GCS_BUCKET_URI: ${GCS_BUCKET_URI}
-            OPENAI_API_KEY: ${OPENAI_API_KEY}
+            # GCP_PROJECT: ${GCP_PROJECT}
+            # GCS_BUCKET_URI: ${GCS_BUCKET_URI}
+            # OPENAI_API_KEY: ${OPENAI_API_KEY}
             CHROMADB_HOST: chromadb
             CHROMADB_PORT: "8000"
         depends_on:
