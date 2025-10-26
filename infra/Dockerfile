@@ -1,62 +1,59 @@
-# -------------------------------------------------------------------
-# 1. Base image
-# -------------------------------------------------------------------
-FROM python:3.12-slim
+# 1. Base image: python 3.12 slim
+FROM python:3.12-slim AS base
 
-# 不要把 apt 的 man pages 警告弄爆屏
+# 2. We'll create a non-root user "app"
+ARG APP_USER=app
+
+# To avoid tz + debconf noise
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIP_NO_CACHE_DIR=1 \
+    UV_PROJECT_ENV=/.venv
+
+# Optional: set default envs the code expects
+ENV INPUT_FOLDER=/app/input-datasets \
+    OUTPUT_FOLDER=/app/input-datasets/outputs \
+    FULL_ORIGINAL_JSONL=/app/input-datasets/raw/ewg_face_full.jsonl \
+    CHROMADB_HOST=chromadb \
+    CHROMADB_PORT=8000 \
+    EMBEDDING_DIMENSION=256
+
+# 3. Install system deps (build tools, curl, etc.) and create user/app dirs
 RUN set -ex; \
     for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done && \
     apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      build-essential \
-      curl \
-      git \
-      nano \
-      ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+        curl \
+        build-essential \
+        git \
+        nano \
+        ca-certificates \
+        && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    pip install --no-cache-dir --upgrade pip && \
+    pip install uv && \
+    useradd -ms /bin/bash ${APP_USER} -d /home/${APP_USER} -u 1000 && \
+    mkdir -p /app && chown ${APP_USER}:${APP_USER} /app && \
+    mkdir -p /.venv && chown ${APP_USER}:${APP_USER} /.venv
 
-# -------------------------------------------------------------------
-# 2. Create non-root user
-# -------------------------------------------------------------------
-ARG APP_USER=app
-RUN useradd -m ${APP_USER}
-
+# 4. Switch to non-root for safety
+USER ${APP_USER}
 WORKDIR /app
 
-# -------------------------------------------------------------------
-# 3. Copy requirement files first (for Docker layer cache)
-# -------------------------------------------------------------------
-COPY --chown=${APP_USER}:${APP_USER} requirements.txt /app/requirements.txt
+# 5. Copy dependency definitions first (to cache deps layer)
+COPY --chown=${APP_USER}:${APP_USER} pyproject.toml ./
+# if you have uv.lock committed, also:
+# COPY --chown=${APP_USER}:${APP_USER} uv.lock ./
 
-# -------------------------------------------------------------------
-# 4. Install python deps
-# -------------------------------------------------------------------
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r /app/requirements.txt
+# 6. Install python deps into /.venv using uv
+RUN uv sync --frozen || uv sync
 
-# -------------------------------------------------------------------
-# 5. Copy source code & data (except chroma_index)
-# -------------------------------------------------------------------
+# 7. Copy source code + data scaffolding
 COPY --chown=${APP_USER}:${APP_USER} backend /app/backend
 COPY --chown=${APP_USER}:${APP_USER} input-datasets /app/input-datasets
 COPY --chown=${APP_USER}:${APP_USER} secrets /app/secrets
+# chroma_index may not exist on fresh clone; so create an empty dir instead of COPY failing
+RUN mkdir -p /app/chroma_index
 
-# 我们不在 build 阶段 COPY chroma_index
-# 因为第一次可能还没有这个目录。运行容器时用 -v 绑定就好。
-
-# -------------------------------------------------------------------
-# 6. entrypoint 脚本（可选）
-# -------------------------------------------------------------------
-COPY --chown=${APP_USER}:${APP_USER} infra/docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh
-
-# -------------------------------------------------------------------
-# 7. Security: drop to non-root
-# -------------------------------------------------------------------
-USER ${APP_USER}
-
-# -------------------------------------------------------------------
-# 8. Default entry
-# -------------------------------------------------------------------
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["bash"]
+# 8. default entrypoint -> interactive shell like before
+CMD ["/bin/bash"]
