@@ -43,5 +43,4 @@ services:
             CHROMADB_HOST: chromadb
             CHROMADB_PORT: "8000"
         depends_on:
-            chromadb:
-                condition: service_healthy
+            - chromadb
