@@ -6,8 +6,7 @@ ARG APP_USER=app
 
 # To avoid tz + debconf noise
 ENV DEBIAN_FRONTEND=noninteractive \
-    PIP_NO_CACHE_DIR=1 \
-    UV_PROJECT_ENV=/.venv
+    PIP_NO_CACHE_DIR=1
 
 # Optional: set default envs the code expects
 ENV INPUT_FOLDER=/app/input-datasets \
@@ -16,9 +15,6 @@ ENV INPUT_FOLDER=/app/input-datasets \
     CHROMADB_HOST=chromadb \
     CHROMADB_PORT=8000 \
     EMBEDDING_DIMENSION=256
-
-# 设置 PATH，让 .venv 的 Python 优先
-ENV PATH="/.venv/bin:$PATH"
 
 # 3. Install system deps (build tools, curl, etc.) and create user/app dirs
 RUN set -ex; \
@@ -36,8 +32,7 @@ RUN set -ex; \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir uv && \
     useradd -ms /bin/bash ${APP_USER} -d /home/${APP_USER} -u 1000 && \
-    mkdir -p /app && chown ${APP_USER}:${APP_USER} /app && \
-    mkdir -p /.venv && chown ${APP_USER}:${APP_USER} /.venv
+    mkdir -p /app && chown ${APP_USER}:${APP_USER} /app
 
 # 4. Switch to non-root for safety
 USER ${APP_USER}
@@ -46,15 +41,18 @@ WORKDIR /app
 # 5. Copy dependency definitions first (to cache deps layer)
 COPY --chown=${APP_USER}:${APP_USER} pyproject.toml ./
 
-# 6. Install python deps into /.venv using uv
+# 6. Install python deps - uv will create .venv in /app by default
 RUN uv sync --frozen || uv sync
 
-# 7. Copy source code + data scaffolding
+# 7. Set PATH to use the venv in /app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+
+# 8. Copy source code + data scaffolding
 COPY --chown=${APP_USER}:${APP_USER} backend /app/backend
 COPY --chown=${APP_USER}:${APP_USER} input-datasets /app/input-datasets
 
-# 8. Create directories that will be mounted at runtime
+# 9. Create directories that will be mounted at runtime
 RUN mkdir -p /app/secrets /app/chroma_index
 
-# 9. default entrypoint -> interactive shell
-CMD ["/bin/bash", "-c", "source /.venv/bin/activate && exec /bin/bash"]
+# 10. default entrypoint with venv activated
+CMD ["/bin/bash", "-c", "source /app/.venv/bin/activate && exec /bin/bash"]
