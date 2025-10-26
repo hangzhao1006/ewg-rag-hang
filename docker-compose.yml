@@ -6,6 +6,7 @@ services:
     chromadb:
         image: chromadb/chroma:latest
         container_name: chromadb
+        restart: unless-stopped
         networks: 
             - llm-rag-network
         ports:
@@ -16,11 +17,13 @@ services:
             - IS_PERSISTENT=TRUE
             - ANONYMIZED_TELEMETRY=FALSE
             - CHROMA_CORS_ALLOW_ORIGINS=["*"]
+        # 使用 Python 做健康检查（chromadb 镜像内有 Python）
         healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
-            interval: 10s
-            timeout: 5s
+            test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/heartbeat')"]
+            interval: 15s
+            timeout: 10s
             retries: 5
+            start_period: 30s
 
     ewg-data-chat:
         container_name: ewg-data-chat
