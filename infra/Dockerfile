@@ -56,8 +56,8 @@ RUN mkdir -p /app/secrets /app/chroma_index
 # 8. 设置 PATH 使虚拟环境的 Python 成为默认
 ENV PATH="/.venv/bin:$PATH"
 
-# 9. 验证安装（可选，用于调试）
-RUN python -c "import chromadb; print('ChromaDB installed successfully')"
+# 9. 验证安装 - 使用完整路径或者在设置 PATH 后验证
+RUN /.venv/bin/python -c "import chromadb; print('✅ ChromaDB installed successfully')"
 
 # 10. default entrypoint -> interactive shell like before
 CMD ["/bin/bash"]
