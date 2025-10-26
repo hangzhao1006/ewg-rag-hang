@@ -38,6 +38,7 @@ dependencies = [
     "google-auth==2.41.1",
     "google-auth-oauthlib==1.2.2",
     "google-auth-httplib2==0.2.0",
+    "google-genai>=1.0.0",
 
     # server deps your cli imports:
     "fastapi==0.115.6",
