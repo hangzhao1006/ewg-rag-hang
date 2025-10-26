@@ -17,6 +17,9 @@ ENV INPUT_FOLDER=/app/input-datasets \
     CHROMADB_PORT=8000 \
     EMBEDDING_DIMENSION=256
 
+# 设置 PATH，让 .venv 的 Python 优先
+ENV PATH="/.venv/bin:$PATH"
+
 # 3. Install system deps (build tools, curl, etc.) and create user/app dirs
 RUN set -ex; \
     for i in $(seq 1 8); do mkdir -p "/usr/share/man/man${i}"; done && \
@@ -50,14 +53,8 @@ RUN uv sync --frozen || uv sync
 COPY --chown=${APP_USER}:${APP_USER} backend /app/backend
 COPY --chown=${APP_USER}:${APP_USER} input-datasets /app/input-datasets
 
-# Create directories that will be mounted at runtime
+# 8. Create directories that will be mounted at runtime
 RUN mkdir -p /app/secrets /app/chroma_index
 
-# 8. 设置 PATH 使虚拟环境的 Python 成为默认
-ENV PATH="/.venv/bin:$PATH"
-
-# 9. 验证安装 - 使用完整路径或者在设置 PATH 后验证
-RUN /.venv/bin/python -c "import chromadb; print('✅ ChromaDB installed successfully')"
-
-# 10. default entrypoint -> interactive shell like before
+# 9. default entrypoint -> interactive shell
 CMD ["/bin/bash"]
