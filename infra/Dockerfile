@@ -29,9 +29,9 @@ RUN set -ex; \
         nano \
         ca-certificates \
         && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     pip install --no-cache-dir --upgrade pip && \
-    pip install uv && \
+    pip install --no-cache-dir uv && \
     useradd -ms /bin/bash ${APP_USER} -d /home/${APP_USER} -u 1000 && \
     mkdir -p /app && chown ${APP_USER}:${APP_USER} /app && \
     mkdir -p /.venv && chown ${APP_USER}:${APP_USER} /.venv
@@ -42,8 +42,6 @@ WORKDIR /app
 
 # 5. Copy dependency definitions first (to cache deps layer)
 COPY --chown=${APP_USER}:${APP_USER} pyproject.toml ./
-# if you have uv.lock committed, also:
-# COPY --chown=${APP_USER}:${APP_USER} uv.lock ./
 
 # 6. Install python deps into /.venv using uv
 RUN uv sync --frozen || uv sync
@@ -55,5 +53,11 @@ COPY --chown=${APP_USER}:${APP_USER} input-datasets /app/input-datasets
 # Create directories that will be mounted at runtime
 RUN mkdir -p /app/secrets /app/chroma_index
 
-# 8. default entrypoint -> interactive shell like before
+# 8. 设置 PATH 使虚拟环境的 Python 成为默认
+ENV PATH="/.venv/bin:$PATH"
+
+# 9. 验证安装（可选，用于调试）
+RUN python -c "import chromadb; print('ChromaDB installed successfully')"
+
+# 10. default entrypoint -> interactive shell like before
 CMD ["/bin/bash"]
