@@ -51,9 +51,9 @@ RUN uv sync --frozen || uv sync
 # 7. Copy source code + data scaffolding
 COPY --chown=${APP_USER}:${APP_USER} backend /app/backend
 COPY --chown=${APP_USER}:${APP_USER} input-datasets /app/input-datasets
-COPY --chown=${APP_USER}:${APP_USER} secrets /app/secrets
-# chroma_index may not exist on fresh clone; so create an empty dir instead of COPY failing
-RUN mkdir -p /app/chroma_index
+
+# Create directories that will be mounted at runtime
+RUN mkdir -p /app/secrets /app/chroma_index
 
 # 8. default entrypoint -> interactive shell like before
 CMD ["/bin/bash"]
