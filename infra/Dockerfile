@@ -57,4 +57,4 @@ COPY --chown=${APP_USER}:${APP_USER} input-datasets /app/input-datasets
 RUN mkdir -p /app/secrets /app/chroma_index
 
 # 9. default entrypoint -> interactive shell
-CMD ["/bin/bash"]
+CMD ["/bin/bash", "-c", "source /.venv/bin/activate && exec /bin/bash"]
